@@ -1,0 +1,28 @@
+Player can…
+Move a piece
+Do castling
+Request draw
+Resign
+
+When a piece is moved, it can...
+Take a piece in the spot its moving to
+Only move in its allowed spots
+
+Game State can become…
+Game Active
+Draw
+Resignation
+Stalemate
+
+Needs to validate...
+Stalemate
+Check
+Checkmate
+All incoming moves
+
+Needs to be stored...
+All past moves
+Current location of all pieces
+
+Current turn?
+Rotate between Player 1, Player 2 and Validator?
