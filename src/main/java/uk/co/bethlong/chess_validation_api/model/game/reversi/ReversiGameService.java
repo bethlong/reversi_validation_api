@@ -55,7 +55,7 @@ public class ReversiGameService {
         return reversiGame;
     }
 
-    public void registerOtherPlayer(String gameUid, ReversiPlayer otherPlayer) {
+    public ReversiGame registerOtherPlayer(String gameUid, ReversiPlayer otherPlayer) {
         Optional<ReversiGame> gameOptional = reversiGameRepository.findById(gameUid);
         if (gameOptional.isEmpty())
             throw new IllegalArgumentException("Invalid game UID");
@@ -76,6 +76,8 @@ public class ReversiGameService {
             throw new NoPlayerSlotAvailableException("No space for requested colour in game " + gameUid + "... player '" + otherPlayer.getPlayerName() + "' cannot join!");
 
         reversiGame.setGameManagementStatus(GameManagementStatus.WAITING_RED_TURN);
+
+        return reversiGame;
     }
 
     public void makePlacement(String gameUid, ReversiPlayer player, PlaceRequest placeRequest) throws InvalidPlayerMoveRequestException {
