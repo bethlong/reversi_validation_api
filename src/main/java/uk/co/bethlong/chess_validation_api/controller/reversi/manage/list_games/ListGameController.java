@@ -8,7 +8,9 @@ import uk.co.bethlong.chess_validation_api.model.database.game.reversi.ReversiGa
 import uk.co.bethlong.chess_validation_api.model.database.game.reversi.ReversiPlayer;
 import uk.co.bethlong.chess_validation_api.model.database.game.reversi.ReversiPlayerRepository;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/reversi/get-games")
@@ -47,6 +49,7 @@ public class ListGameController {
             gameListApiResponse.gameStatsList.add(gameStats);
         }
 
+        gameListApiResponse.gameStatsList = gameListApiResponse.gameStatsList.stream().sorted(Comparator.comparing(gameStats -> gameStats.dateStarted)).collect(Collectors.toList());
         return gameListApiResponse;
     }
 }
