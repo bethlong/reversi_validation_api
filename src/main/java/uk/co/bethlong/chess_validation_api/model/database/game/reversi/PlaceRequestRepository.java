@@ -7,6 +7,6 @@ import java.util.List;
 
 @Repository
 public interface PlaceRequestRepository extends CrudRepository<PlaceRequest, Integer> {
-    List<PlaceRequest> findByGame(Game game);
+    List<PlaceRequest> findByReversiGame(ReversiGame reversiGame);
 
 }

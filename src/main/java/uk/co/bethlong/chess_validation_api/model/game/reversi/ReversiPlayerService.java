@@ -20,6 +20,7 @@ public class ReversiPlayerService {
         reversiPlayer.setLastSuccessfulRequest(new Date());
         reversiPlayer.setPlayerName(playerName);
         reversiPlayer.setPlayerUid(UUID.randomUUID().toString());
+        reversiPlayer.setRed(isRed);
         reversiPlayerRepository.save(reversiPlayer);
 
         return reversiPlayer;

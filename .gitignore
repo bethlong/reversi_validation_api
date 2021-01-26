@@ -102,3 +102,4 @@ fabric.properties
 .idea/encodings.xml
 .idea/vcs.xml
 chess_validation_api.iml
+test.js

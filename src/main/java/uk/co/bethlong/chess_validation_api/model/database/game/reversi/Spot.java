@@ -15,17 +15,23 @@ public class Spot {
     private Integer YRow;
 
     @ManyToOne
-    private Game game;
+    private ReversiGame reversiGame;
 
     @Column
     private boolean hasPiece;
     @Column
     private boolean isRedPiece;
 
-    public Spot(int x, int y, Game game) {
-        this.XColumn = x;
-        this.YRow = y;
-        this.game = game;
+    public void setXColumn(Integer XColumn) {
+        this.XColumn = XColumn;
+    }
+
+    public void setYRow(Integer YRow) {
+        this.YRow = YRow;
+    }
+
+    public void setReversiGame(ReversiGame reversiGame) {
+        this.reversiGame = reversiGame;
     }
 
     public int getXColumn() {

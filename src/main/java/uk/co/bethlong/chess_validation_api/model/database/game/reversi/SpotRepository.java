@@ -8,7 +8,7 @@ import java.util.Optional;
 
 @Repository
 public interface SpotRepository extends CrudRepository<Spot, Integer> {
-    Optional<Spot> findByXColumnAndYRowAndGame(int xColumn, int yRow, Game game);
+    Optional<Spot> findByXColumnAndYRowAndReversiGame(int xColumn, int yRow, ReversiGame reversiGame);
 
-    List<Spot> findByGame(Game game);
+    List<Spot> findByReversiGame(ReversiGame reversiGame);
 }

@@ -8,7 +8,7 @@ import javax.persistence.*;
 import java.util.*;
 
 @Entity
-public class Game {
+public class ReversiGame {
     @Id
     @Column
     private String gameUid;
@@ -33,17 +33,14 @@ public class Game {
     @Column
     private Date dateFinished;
 
-    @OneToMany(mappedBy = "spotId")
-    private List<Spot> spotList;
     @Column
     private int xColumnCount;
     @Column
     private int yRowCount;
 
-    public Game(int xColumnCount, int yRowCount) {
-        this.xColumnCount = xColumnCount;
-        this.yRowCount = yRowCount;
-        this.spotList = new ArrayList<>();
+    public ReversiGame() {
+        this.xColumnCount = 0;
+        this.yRowCount = 0;
 
         playerList = new ArrayList<>();
 
@@ -105,6 +102,14 @@ public class Game {
 
     public void setDateFinished(Date dateFinished) {
         this.dateFinished = dateFinished;
+    }
+
+    public void setxColumnCount(int xColumnCount) {
+        this.xColumnCount = xColumnCount;
+    }
+
+    public void setyRowCount(int yRowCount) {
+        this.yRowCount = yRowCount;
     }
 
     public int getxColumnCount() {

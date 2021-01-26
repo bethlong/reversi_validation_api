@@ -18,17 +18,17 @@ public class ReversiPlayer {
     private Date lastSuccessfulRequest;
 
     @ManyToOne
-    private Game game;
+    private ReversiGame reversiGame;
 
     @Column
     private boolean isRed;
 
-    public Game getGame() {
-        return game;
+    public ReversiGame getReversiGame() {
+        return reversiGame;
     }
 
-    public void setGame(Game game) {
-        this.game = game;
+    public void setReversiGame(ReversiGame reversiGame) {
+        this.reversiGame = reversiGame;
     }
 
     public boolean isRed() {

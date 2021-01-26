@@ -10,7 +10,7 @@ public class PlaceRequest {
     private int moveId;
 
     @ManyToOne
-    private Game game;
+    private ReversiGame reversiGame;
 
     @ManyToOne
     private ReversiPlayer player;
@@ -45,12 +45,12 @@ public class PlaceRequest {
         this.yRow = yRow;
     }
 
-    public Game getGame() {
-        return game;
+    public ReversiGame getReversiGame() {
+        return reversiGame;
     }
 
-    public void setGame(Game game) {
-        this.game = game;
+    public void setReversiGame(ReversiGame reversiGame) {
+        this.reversiGame = reversiGame;
     }
 
     public ReversiPlayer getPlayer() {

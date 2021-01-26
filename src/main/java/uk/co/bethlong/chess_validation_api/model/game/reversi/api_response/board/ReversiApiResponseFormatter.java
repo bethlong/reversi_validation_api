@@ -10,34 +10,34 @@ import java.util.Optional;
 @Service
 public class ReversiApiResponseFormatter {
 
-    private final GameRepository gameRepository;
+    private final ReversiGameRepository reversiGameRepository;
     private final SpotRepository spotRepository;
     private final PlaceRequestRepository placeRequestRepository;
 
-    public ReversiApiResponseFormatter(GameRepository gameRepository, SpotRepository spotRepository, PlaceRequestRepository placeRequestRepository) {
-        this.gameRepository = gameRepository;
+    public ReversiApiResponseFormatter(ReversiGameRepository reversiGameRepository, SpotRepository spotRepository, PlaceRequestRepository placeRequestRepository) {
+        this.reversiGameRepository = reversiGameRepository;
         this.spotRepository = spotRepository;
         this.placeRequestRepository = placeRequestRepository;
     }
 
     public ReversiGameBoard getBoardResponse(String gameUid)
     {
-        Optional<Game> gameOptional = gameRepository.findById(gameUid);
+        Optional<ReversiGame> gameOptional = reversiGameRepository.findById(gameUid);
         if (gameOptional.isEmpty())
             throw new IllegalArgumentException("Invalid game UID");
 
-        Game game = gameOptional.get();
+        ReversiGame reversiGame = gameOptional.get();
 
         ReversiGameBoard apiResponse = new ReversiGameBoard();
-        apiResponse.dateCreated = game.getDateCreated();
-        apiResponse.dateFinished = game.getDateFinished();
-        apiResponse.turn = game.isRedPlayersTurn() ? GameTurn.RED : GameTurn.BLUE;
-        apiResponse.victoryStatus = game.getVictoryStatus();
-        apiResponse.xColumnTotal = game.getxColumnCount();
-        apiResponse.yRowTotal = game.getyRowCount();
+        apiResponse.dateCreated = reversiGame.getDateCreated();
+        apiResponse.dateFinished = reversiGame.getDateFinished();
+        apiResponse.turn = reversiGame.isRedPlayersTurn() ? GameTurn.RED : GameTurn.BLUE;
+        apiResponse.victoryStatus = reversiGame.getVictoryStatus();
+        apiResponse.xColumnTotal = reversiGame.getxColumnCount();
+        apiResponse.yRowTotal = reversiGame.getyRowCount();
 
         List<BoardSlot> boardSlotList = new LinkedList<>();
-        List<Spot> spotList = spotRepository.findByGame(game);
+        List<Spot> spotList = spotRepository.findByReversiGame(reversiGame);
         for (Spot spot : spotList)
         {
             BoardSlot boardSlot = new BoardSlot();
@@ -50,7 +50,7 @@ public class ReversiApiResponseFormatter {
         apiResponse.board = boardSlotList;
 
         List<Move> moveList = new LinkedList<>();
-        List<PlaceRequest> placeRequestList = placeRequestRepository.findByGame(game);
+        List<PlaceRequest> placeRequestList = placeRequestRepository.findByReversiGame(reversiGame);
         for (PlaceRequest placeRequest: placeRequestList)
         {
             Move move = new Move();

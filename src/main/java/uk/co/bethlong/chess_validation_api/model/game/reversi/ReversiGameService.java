@@ -15,48 +15,54 @@ public class ReversiGameService {
     private final Logger LOGGER = LoggerFactory.getLogger(ReversiGameService.class);
 
     private final PlaceRequestRepository placeRequestRepository;
-    private final GameRepository gameRepository;
+    private final ReversiGameRepository reversiGameRepository;
     private final ReversiPlayerRepository playerRepository;
     private final SpotRepository spotRepository;
 
-    public ReversiGameService(PlaceRequestRepository placeRequestRepository, GameRepository gameRepository, ReversiPlayerRepository playerRepository, SpotRepository spotRepository) {
+    public ReversiGameService(PlaceRequestRepository placeRequestRepository, ReversiGameRepository reversiGameRepository, ReversiPlayerRepository playerRepository, SpotRepository spotRepository) {
         this.placeRequestRepository = placeRequestRepository;
-        this.gameRepository = gameRepository;
+        this.reversiGameRepository = reversiGameRepository;
         this.playerRepository = playerRepository;
         this.spotRepository = spotRepository;
     }
 
-    public Game createNewGame(ReversiPlayer firstPlayer)
+    public ReversiGame createNewGame(ReversiPlayer firstPlayer)
     {
         int xColumnCount = 8;
         int yRowCount = 8;
 
-        Game game = new Game(xColumnCount, yRowCount);
-        game.setGameManagementStatus(GameManagementStatus.WAITING_SECOND_PLAYER_TO_JOIN);
-        gameRepository.save(game);
+        ReversiGame reversiGame = new ReversiGame();
+        reversiGame.setxColumnCount(xColumnCount);
+        reversiGame.setyRowCount(yRowCount);
+        reversiGame.setGameManagementStatus(GameManagementStatus.WAITING_SECOND_PLAYER_TO_JOIN);
+        reversiGameRepository.save(reversiGame);
 
         List<Spot> spotList = new ArrayList<>();
         for (int i = 0; i < xColumnCount; i++) {
             for (int k = 0; k < yRowCount; k++) {
-                spotList.add(new Spot(i, k, game));
+                Spot spot = new Spot();
+                spot.setXColumn(i);
+                spot.setYRow(k);
+                spot.setReversiGame(reversiGame);
+                spotList.add(spot);
             }
         }
         spotRepository.saveAll(spotList);
 
-        firstPlayer.setGame(game);
+        firstPlayer.setReversiGame(reversiGame);
         playerRepository.save(firstPlayer);
 
-        return game;
+        return reversiGame;
     }
 
     public void registerOtherPlayer(String gameUid, ReversiPlayer otherPlayer) {
-        Optional<Game> gameOptional = gameRepository.findById(gameUid);
+        Optional<ReversiGame> gameOptional = reversiGameRepository.findById(gameUid);
         if (gameOptional.isEmpty())
             throw new IllegalArgumentException("Invalid game UID");
 
-        Game game = gameOptional.get();
+        ReversiGame reversiGame = gameOptional.get();
 
-        List<ReversiPlayer> playerList = playerRepository.findByGame(game);
+        List<ReversiPlayer> playerList = playerRepository.findByReversiGame(reversiGame);
 
         if (playerList.size() > 1)
         {
@@ -69,24 +75,24 @@ public class ReversiGameService {
         else
             throw new NoPlayerSlotAvailableException("No space for requested colour in game " + gameUid + "... player '" + otherPlayer.getPlayerName() + "' cannot join!");
 
-        game.setGameManagementStatus(GameManagementStatus.WAITING_RED_TURN);
+        reversiGame.setGameManagementStatus(GameManagementStatus.WAITING_RED_TURN);
     }
 
     public void makePlacement(String gameUid, ReversiPlayer player, PlaceRequest placeRequest) throws InvalidPlayerMoveRequestException {
-        Optional<Game> gameOptional = gameRepository.findById(gameUid);
+        Optional<ReversiGame> gameOptional = reversiGameRepository.findById(gameUid);
         if (gameOptional.isEmpty())
             throw new IllegalArgumentException("Invalid game UID");
-        Game game = gameOptional.get();
+        ReversiGame reversiGame = gameOptional.get();
 
-        if (game.isRedPlayersTurn() && !player.isRed()) {
+        if (reversiGame.isRedPlayersTurn() && !player.isRed()) {
             throw new InvalidPlayerMoveRequestException("Move was requested by BLUE player '" + player.getPlayerName() + "' which should be waiting.");
         }
 
-        if (game.isBluePlayersTurn() && player.isRed()) {
+        if (reversiGame.isBluePlayersTurn() && player.isRed()) {
             throw new InvalidPlayerMoveRequestException("Move was requested by RED player '" + player.getPlayerName() + "' which should be waiting.");
         }
 
-        Optional<Spot> spotOptional = spotRepository.findByXColumnAndYRowAndGame(placeRequest.getXColumn(), placeRequest.getYRow(), game);
+        Optional<Spot> spotOptional = spotRepository.findByXColumnAndYRowAndReversiGame(placeRequest.getXColumn(), placeRequest.getYRow(), reversiGame);
         if (spotOptional.isEmpty())
             throw new InvalidPlayerMoveRequestException("Failed to find spot requested");
 
@@ -103,11 +109,11 @@ public class ReversiGameService {
         spotRepository.save(spot);
         placeRequestRepository.save(placeRequest);
 
-        if (game.isRedPlayersTurn())
-            game.setGameManagementStatus(GameManagementStatus.WAITING_BLUE_TURN);
-        else if (game.isBluePlayersTurn())
-            game.setGameManagementStatus(GameManagementStatus.WAITING_RED_TURN);
+        if (reversiGame.isRedPlayersTurn())
+            reversiGame.setGameManagementStatus(GameManagementStatus.WAITING_BLUE_TURN);
+        else if (reversiGame.isBluePlayersTurn())
+            reversiGame.setGameManagementStatus(GameManagementStatus.WAITING_RED_TURN);
 
-        gameRepository.save(game);
+        reversiGameRepository.save(reversiGame);
     }
 }

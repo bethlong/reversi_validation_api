@@ -7,5 +7,5 @@ import java.util.List;
 
 @Repository
 public interface ReversiPlayerRepository extends CrudRepository<ReversiPlayer, String> {
-    List<ReversiPlayer> findByGame(Game game);
+    List<ReversiPlayer> findByReversiGame(ReversiGame reversiGame);
 }
