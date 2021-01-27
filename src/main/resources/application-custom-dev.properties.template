@@ -1,7 +1,11 @@
 ## Spring Data
+
 # First time only:
 #spring.jpa.hibernate.ddl-auto=create-drop
+
 # If you wish to save to a persistent file
 #spring.datasource.url=jdbc:h2:file:~/folder-to-save-to/
+
+# Ask for details
 spring.datasource.username=
 spring.datasource.password=
