@@ -29,9 +29,12 @@ public class ReversiGameService {
         this.spotRepository = spotRepository;
     }
 
-    public ReversiGame createNewGame(String playerName, Boolean isRed) {
+    public ReversiGame createNewGame(String playerName, boolean isRed) {
         int xColumnCount = 8;
         int yRowCount = 8;
+
+        if (playerName == null || playerName.isEmpty())
+            throw new IllegalArgumentException("Invalid player name passed to method");
 
         ReversiGame reversiGame = new ReversiGame();
         reversiGame.setxColumnCount(xColumnCount);
@@ -56,7 +59,10 @@ public class ReversiGameService {
         return reversiGame;
     }
 
-    public ReversiGame registerOtherPlayer(String gameUid, String playerName, Boolean isRed) {
+    public ReversiGame registerOtherPlayer(String gameUid, String playerName, boolean isRed) {
+        if (playerName == null || playerName.isEmpty())
+            throw new IllegalArgumentException("Invalid player name passed to method");
+
         ReversiGame reversiGame = this.findGame(gameUid);
 
         checkGameStatus(reversiGame,
