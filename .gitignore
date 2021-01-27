@@ -103,3 +103,4 @@ fabric.properties
 .idea/vcs.xml
 chess_validation_api.iml
 test.js
+src/main/resources/application-custom-dev.properties

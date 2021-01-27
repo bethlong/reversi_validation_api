@@ -1,5 +1,6 @@
 package uk.co.bethlong.chess_validation_api.controller.reversi.play.wait;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,6 +13,7 @@ import uk.co.bethlong.chess_validation_api.model.game.reversi.ReversiGameService
 import uk.co.bethlong.chess_validation_api.model.game.reversi.ReversiPlayerService;
 
 import java.time.Duration;
+import java.time.ZonedDateTime;
 
 @RestController
 @RequestMapping("/reversi/wait-for-turn")
@@ -20,15 +22,21 @@ public class WaitForTurnController {
     private final ReversiPlayerService reversiPlayerService;
     private final ReversiGameService reversiGameService;
 
-    public WaitForTurnController(ReversiPlayerService reversiPlayerService, ReversiGameService reversiGameService) {
+    private final int fluxTimeoutCap;
+
+    public WaitForTurnController(ReversiPlayerService reversiPlayerService,
+                                 ReversiGameService reversiGameService,
+                                 @Value("${uk.co.bethlong.api.controller.reversi.wait-for-turn.timeout-in-seconds}") int fluxTimeoutCap) {
         this.reversiPlayerService = reversiPlayerService;
         this.reversiGameService = reversiGameService;
+        this.fluxTimeoutCap = fluxTimeoutCap;
     }
 
     @GetMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<TurnWaitApiResponse> streamFlux(@RequestParam String gameUid, @RequestParam String playerUid) {
 
-        return Flux.interval(Duration.ofSeconds(1))
+        final ZonedDateTime timeoutCap = ZonedDateTime.now().plusMinutes(fluxTimeoutCap);
+        return Flux.interval(Duration.ofSeconds(1)).takeWhile(t -> ZonedDateTime.now().equals(timeoutCap))
                 .map(sequence ->
                 {
                     ReversiGame reversiGame = reversiGameService.findGame(gameUid);
