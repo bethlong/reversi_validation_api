@@ -40,6 +40,8 @@ public class ReversiGameService {
         ReversiGame reversiGame = new ReversiGame();
         reversiGame.setxColumnCount(xColumnCount);
         reversiGame.setyRowCount(yRowCount);
+        reversiGame.setTotalRedPieces(2);
+        reversiGame.setTotalBluePieces(2);
         reversiGame.setGameManagementStatus(GameManagementStatus.WAITING_SECOND_PLAYER_TO_JOIN);
         reversiGameRepository.save(reversiGame);
 
