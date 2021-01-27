@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ReversiGameService {
@@ -43,12 +44,21 @@ public class ReversiGameService {
         reversiGameRepository.save(reversiGame);
 
         List<Spot> spotList = new ArrayList<>();
-        for (int i = 0; i < xColumnCount; i++) {
-            for (int k = 0; k < yRowCount; k++) {
+        for (int i = 1; i <= xColumnCount; i++) {
+            for (int k = 1; k <= yRowCount; k++) {
                 Spot spot = new Spot();
                 spot.setXColumn(i);
                 spot.setYRow(k);
                 spot.setReversiGame(reversiGame);
+
+                if ((i == 4 && k == 4) || (i == 5 && k == 5)) {
+                    spot.setHasPiece(true);
+                    spot.setIsRedPiece(true);
+                } else if ((i == 5 && k == 4) || (i == 4 && k == 5)) {
+                    spot.setHasPiece(true);
+                    spot.setIsRedPiece(false);
+                }
+
                 spotList.add(spot);
             }
         }
@@ -141,28 +151,67 @@ public class ReversiGameService {
             throw new InvalidPlayerMoveRequestException("Move was requested by RED player '" + player.getPlayerName() + "' which should be waiting.");
         }
 
-        Optional<Spot> spotOptional = spotRepository.findByXColumnAndYRowAndReversiGame(
-                placeRequest.getXColumn(),
-                placeRequest.getYRow(),
-                reversiGame
-        );
-        if (spotOptional.isEmpty())
+        List<Spot> spotList = spotRepository.findByReversiGame(reversiGame);
+        Spot targetSpot = null;
+        Spot[][] spotGrid = new Spot[reversiGame.getxColumnCount()][reversiGame.getyRowCount()];
+        for (Spot spot : spotList) {
+            spotGrid[spot.getXColumn()][spot.getYRow()] = spot;
+
+            if (spot.getXColumn() == placeRequest.getXColumn() && spot.getYRow() == placeRequest.getYRow()) {
+                targetSpot = spot;
+            }
+        }
+
+        if (targetSpot == null)
             throw new InvalidPlayerMoveRequestException("Failed to find spot requested");
 
-        Spot spot = spotOptional.get();
-
-        if (spot.hasPiece())
+        if (targetSpot.hasPiece())
             throw new InvalidPlayerMoveRequestException("Piece already exists in spot (" + placeRequest.getXColumn()
                     + ", " + placeRequest.getYRow() + ")");
 
-        spot.setHasPiece(true);
-        spot.setIsRedPiece(player.isRed());
 
-        // TODO Flip over colours in between
+        Optional<Spot> lesserXEqualYOptional = getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), -1, 0);
+        Optional<Spot> greaterXEqualYOptional = getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), 1, 0);
+        Optional<Spot> equalXLesserYOptional = getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), 0, -1);
+        Optional<Spot> equalXGreaterYOptional = getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), 0, 1);
+        Optional<Spot> lesserXLesserYOptional = getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), -1, -1);
+        Optional<Spot> greaterXLesserYOptional = getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), 1, -1);
+        Optional<Spot> lesserXGreaterYOptional = getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), -1, 1);
+        Optional<Spot> greaterXGreaterYOptional = getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), 1, 1);
 
-        // TODO total scores
+        boolean atLeastOneMatch = lesserXEqualYOptional.isPresent() || greaterXEqualYOptional.isPresent()
+                || equalXLesserYOptional.isPresent() || equalXGreaterYOptional.isPresent()
+                || lesserXLesserYOptional.isPresent() || greaterXLesserYOptional.isPresent()
+                || lesserXGreaterYOptional.isPresent() || greaterXGreaterYOptional.isPresent();
+        if (!atLeastOneMatch)
+            throw new InvalidPlayerMoveRequestException("Not a valid move: no matching pieces of same colour");
 
-        spotRepository.save(spot);
+        targetSpot.setHasPiece(true);
+        targetSpot.setIsRedPiece(player.isRed());
+
+        if (lesserXEqualYOptional.isPresent()) flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), -1, 0);
+        if (greaterXEqualYOptional.isPresent()) flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), 1, 0);
+        if (equalXLesserYOptional.isPresent()) flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), 0, -1);
+        if (equalXGreaterYOptional.isPresent()) flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), 0, 1);
+        if (lesserXLesserYOptional.isPresent()) flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), -1, -1);
+        if (greaterXLesserYOptional.isPresent()) flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), 1, -1);
+        if (lesserXGreaterYOptional.isPresent()) flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), -1, 1);
+        if (greaterXGreaterYOptional.isPresent()) flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), 1, 1);
+
+        int blueCount = 0;
+        int redCount = 0;
+        for (Spot spot : spotList) {
+            if (spot.hasPiece()) {
+                if (spot.isRedPiece())
+                    redCount++;
+                else
+                    blueCount++;
+            }
+        }
+        reversiGame.setTotalRedPieces(redCount);
+        reversiGame.setTotalBluePieces(blueCount);
+
+        spotRepository.saveAll(spotList);
         placeRequestRepository.save(placeRequest);
 
         if (reversiGame.isTurn(true))
@@ -185,5 +234,55 @@ public class ReversiGameService {
                         + "' was '" + reversiGame.getGameManagementStatus() + "', but a game update only allowed for statuses '"
                         + Arrays.toString(gameManagementStatuses) + "' is being requested."
         );
+    }
+
+    private Optional<Spot> getPossibleSpotInDirection(Spot[][] spotGrid, boolean isStartSpot, Spot startingSpot, boolean targetColour, int xModifier, int yModifier) {
+        int nextX = startingSpot.getXColumn() + xModifier;
+        int nextY = startingSpot.getYRow() + yModifier;
+
+        // Presumes grid has >1 columns
+        if (nextX < 0 || nextX >= spotGrid.length || nextY < 0 || nextY >= spotGrid[0].length) {
+            return Optional.empty();
+        }
+
+        Spot nextSpot;
+        try {
+            nextSpot = spotGrid[nextX][nextY];
+        } catch (ArrayIndexOutOfBoundsException exception) {
+            LOGGER.error("Edge of board reached without being caught!", exception);
+            return Optional.empty();
+        }
+
+        boolean isNextSpotEmpty = !nextSpot.hasPiece();
+        boolean isNextSpotSameColour = !isNextSpotEmpty && nextSpot.isRedPiece() == targetColour;
+
+        if (isNextSpotEmpty && !isStartSpot) {
+            return Optional.of(nextSpot);
+        } else if (!isNextSpotSameColour) {
+            return getPossibleSpotInDirection(spotGrid, false, nextSpot, targetColour, xModifier, yModifier);
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    private void flipSpotsInDirection(Spot[][] spotGrid, Spot startingSpot, boolean targetColour, int xModifier, int yModifier) {
+        int nextX = startingSpot.getXColumn() + xModifier;
+        int nextY = startingSpot.getYRow() + yModifier;
+
+        // Presumes grid has >1 columns
+        if (nextX < 0 || nextX >= spotGrid.length || nextY < 0 || nextY >= spotGrid[0].length) {
+            throw new IllegalArgumentException("Asked for a flip in a direction that has no valid end!");
+        }
+
+        Spot nextSpot;
+        try {
+            nextSpot = spotGrid[nextX][nextY];
+        } catch (ArrayIndexOutOfBoundsException exception) {
+            throw new IllegalArgumentException("Asked for a flip in a direction that has no valid end! Went off board.");
+        }
+
+        if (nextSpot.hasPiece() && nextSpot.isRedPiece() != targetColour) {
+            flipSpotsInDirection(spotGrid, nextSpot, targetColour, xModifier, yModifier);
+        }
     }
 }
