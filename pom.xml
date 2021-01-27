@@ -73,6 +73,12 @@
             </exclusions>
         </dependency>
 
+        <!-- Spring Webflux -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+
         <!-- Spring Data -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

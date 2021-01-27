@@ -20,11 +20,6 @@ public class PlaceRequest {
     @Column
     private int yRow;
 
-    public PlaceRequest(int xColumn, int yRow) {
-        this.xColumn = xColumn;
-        this.yRow = yRow;
-    }
-
     public int getMoveId() {
         return moveId;
     }

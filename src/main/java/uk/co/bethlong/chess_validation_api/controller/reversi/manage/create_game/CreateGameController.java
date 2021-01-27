@@ -9,6 +9,8 @@ import uk.co.bethlong.chess_validation_api.model.database.game.reversi.ReversiPl
 import uk.co.bethlong.chess_validation_api.model.game.reversi.ReversiGameService;
 import uk.co.bethlong.chess_validation_api.model.game.reversi.ReversiPlayerService;
 
+import java.util.Optional;
+
 @RestController
 @RequestMapping("/reversi/create-game")
 public class CreateGameController {
@@ -21,16 +23,18 @@ public class CreateGameController {
     }
 
     @GetMapping
-    public CreateGameApiResponse getCreateGame(@RequestParam("playerName") String playerName, @RequestParam(value = "isRed", required = false) Boolean isRed)
+    public CreateGameApiResponse getCreateGame(@RequestParam("playerName") String playerName, @RequestParam(value = "isRed", required = false, defaultValue = "true") Boolean isRed)
     {
-        if (isRed == null) isRed = true;
-        ReversiPlayer reversiPlayer = reversiPlayerService.registerPlayer(playerName, isRed);
-
-        ReversiGame reversiGame = reversiGameService.createNewGame(reversiPlayer);
+        ReversiGame reversiGame = reversiGameService.createNewGame(playerName, isRed);
+        Optional<ReversiPlayer> reversiPlayer = reversiPlayerService.getPlayerInGame(reversiGame, isRed);
+        if (reversiPlayer.isEmpty())
+        {
+            throw new IllegalArgumentException("Reversi player was empty when it was expected for gameUID '" + reversiGame.getGameUid() + "'");
+        }
 
         CreateGameApiResponse apiResponse = new CreateGameApiResponse();
         apiResponse.gameUid = reversiGame.getGameUid();
-        apiResponse.playerUid = reversiPlayer.getPlayerUid();
+        apiResponse.playerUid = reversiPlayer.get().getPlayerUid();
 
         return apiResponse;
     }

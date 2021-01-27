@@ -34,6 +34,11 @@ public class ReversiGame {
     private Date dateFinished;
 
     @Column
+    private Integer totalBluePieces;
+    @Column
+    private Integer totalRedPieces;
+
+    @Column
     private int xColumnCount;
     @Column
     private int yRowCount;
@@ -44,6 +49,9 @@ public class ReversiGame {
 
         playerList = new ArrayList<>();
 
+        totalBluePieces = 0;
+        totalRedPieces = 0;
+
         this.gameUid = UUID.randomUUID().toString();
         this.gameManagementStatus = GameManagementStatus.NONE;
 
@@ -53,6 +61,22 @@ public class ReversiGame {
         this.dateFinished = null;
 
         this.placeRequestList = new LinkedList<>();
+    }
+
+    public void setTotalBluePieces(Integer totalBluePieces) {
+        this.totalBluePieces = totalBluePieces;
+    }
+
+    public void setTotalRedPieces(Integer totalRedPieces) {
+        this.totalRedPieces = totalRedPieces;
+    }
+
+    public Integer getTotalBluePieces() {
+        return totalBluePieces;
+    }
+
+    public Integer getTotalRedPieces() {
+        return totalRedPieces;
     }
 
     public List<PlaceRequest> getPlaceRequestList()
@@ -80,12 +104,29 @@ public class ReversiGame {
         return dateFinished;
     }
 
+    public boolean isTurn(Boolean isRed)
+    {
+        return (getGameManagementStatus().equals(GameManagementStatus.WAITING_RED_TURN) && isRed)
+                || (getGameManagementStatus().equals(GameManagementStatus.WAITING_BLUE_TURN) && !isRed);
+    }
+
     public boolean isRedPlayersTurn() {
         return gameManagementStatus.equals(GameManagementStatus.WAITING_RED_TURN);
     }
 
     public boolean isBluePlayersTurn() {
         return gameManagementStatus.equals(GameManagementStatus.WAITING_BLUE_TURN);
+    }
+
+    public boolean isReady(boolean isRedPlayer)
+    {
+        if (gameManagementStatus.equals(GameManagementStatus.WAITING_FOR_READY_UP_BOTH))
+            return false;
+
+        if (isRedPlayer)
+            return !gameManagementStatus.equals(GameManagementStatus.WAITING_FOR_READY_UP_RED);
+        else
+            return !gameManagementStatus.equals(GameManagementStatus.WAITING_FOR_READY_UP_BLUE);
     }
 
     public List<ReversiPlayer> getPlayerList() {

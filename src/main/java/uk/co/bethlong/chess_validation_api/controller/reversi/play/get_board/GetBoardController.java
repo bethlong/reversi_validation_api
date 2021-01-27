@@ -1,37 +1,46 @@
-package uk.co.bethlong.chess_validation_api.model.game.reversi.api_response.board;
+package uk.co.bethlong.chess_validation_api.controller.reversi.play.get_board;
 
-import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import uk.co.bethlong.chess_validation_api.model.database.game.reversi.*;
+import uk.co.bethlong.chess_validation_api.model.game.reversi.ReversiGameService;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
 
-@Service
-public class ReversiApiResponseFormatter {
+@RestController
+@RequestMapping("/reversi/board")
+public class GetBoardController {
 
-    private final ReversiGameRepository reversiGameRepository;
+    private final ReversiGameService reversiGameService;
     private final SpotRepository spotRepository;
     private final PlaceRequestRepository placeRequestRepository;
 
-    public ReversiApiResponseFormatter(ReversiGameRepository reversiGameRepository, SpotRepository spotRepository, PlaceRequestRepository placeRequestRepository) {
-        this.reversiGameRepository = reversiGameRepository;
+    public GetBoardController(ReversiGameService reversiGameService, SpotRepository spotRepository, PlaceRequestRepository placeRequestRepository) {
+        this.reversiGameService = reversiGameService;
         this.spotRepository = spotRepository;
         this.placeRequestRepository = placeRequestRepository;
     }
 
-    public ReversiGameBoard getBoardResponse(String gameUid)
+    @GetMapping
+    public ReversiGameBoardApiResponse getBoard(@RequestParam String gameUid)
     {
-        Optional<ReversiGame> gameOptional = reversiGameRepository.findById(gameUid);
-        if (gameOptional.isEmpty())
-            throw new IllegalArgumentException("Invalid game UID");
+        ReversiGame reversiGame = reversiGameService.findGame(gameUid);
 
-        ReversiGame reversiGame = gameOptional.get();
+        GameTurn gameTurn;
+        if (reversiGame.isTurn(true))
+            gameTurn = GameTurn.RED;
+        else if (reversiGame.isTurn(false))
+            gameTurn = GameTurn.BLUE;
+        else
+            gameTurn = GameTurn.NONE;
 
-        ReversiGameBoard apiResponse = new ReversiGameBoard();
+        ReversiGameBoardApiResponse apiResponse = new ReversiGameBoardApiResponse();
         apiResponse.dateCreated = reversiGame.getDateCreated();
         apiResponse.dateFinished = reversiGame.getDateFinished();
-        apiResponse.turn = reversiGame.isRedPlayersTurn() ? GameTurn.RED : GameTurn.BLUE;
+        apiResponse.turn = gameTurn;
         apiResponse.victoryStatus = reversiGame.getVictoryStatus();
         apiResponse.xColumnTotal = reversiGame.getxColumnCount();
         apiResponse.yRowTotal = reversiGame.getyRowCount();

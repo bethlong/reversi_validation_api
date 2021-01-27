@@ -1,11 +1,11 @@
-package uk.co.bethlong.chess_validation_api.model.game.reversi.api_response.board;
+package uk.co.bethlong.chess_validation_api.controller.reversi.play.get_board;
 
 import uk.co.bethlong.chess_validation_api.model.game.reversi.VictoryStatus;
 
 import java.util.Date;
 import java.util.List;
 
-public class ReversiGameBoard {
+public class ReversiGameBoardApiResponse {
     public Integer xColumnTotal;
     public Integer yRowTotal;
     public List<BoardSlot> board;

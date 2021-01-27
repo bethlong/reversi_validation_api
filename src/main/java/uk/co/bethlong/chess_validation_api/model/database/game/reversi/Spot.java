@@ -23,11 +23,11 @@ public class Spot {
     private boolean isRedPiece;
 
     public void setXColumn(Integer XColumn) {
-        this.XColumn = XColumn;
+        this.XColumn = XColumn - 1;
     }
 
     public void setYRow(Integer YRow) {
-        this.YRow = YRow;
+        this.YRow = YRow - 1;
     }
 
     public void setReversiGame(ReversiGame reversiGame) {
@@ -35,11 +35,11 @@ public class Spot {
     }
 
     public int getXColumn() {
-        return XColumn;
+        return XColumn + 1;
     }
 
     public int getYRow() {
-        return YRow;
+        return YRow + 1;
     }
 
     public boolean hasPiece() {
