@@ -21,7 +21,8 @@ public class ReversiGameService {
     private final ReversiPlayerService reversiPlayerService;
     private final SpotRepository spotRepository;
 
-    public ReversiGameService(PlaceRequestRepository placeRequestRepository, ReversiGameRepository reversiGameRepository, ReversiPlayerService reversiPlayerService, SpotRepository spotRepository) {
+    public ReversiGameService(PlaceRequestRepository placeRequestRepository, ReversiGameRepository reversiGameRepository,
+                              ReversiPlayerService reversiPlayerService, SpotRepository spotRepository) {
         this.placeRequestRepository = placeRequestRepository;
         this.reversiGameRepository = reversiGameRepository;
         this.reversiPlayerService = reversiPlayerService;
@@ -112,7 +113,8 @@ public class ReversiGameService {
         return reversiGameOptional.get();
     }
 
-    public void makePlacement(String gameUid, String playerUid, Integer xColumn, Integer yRow) throws InvalidPlayerMoveRequestException {
+    public void makePlacement(String gameUid, String playerUid, Integer xColumn, Integer yRow)
+            throws InvalidPlayerMoveRequestException {
         ReversiGame reversiGame = findGame(gameUid);
 
         checkGameStatus(reversiGame, GameManagementStatus.WAITING_BLUE_TURN, GameManagementStatus.WAITING_RED_TURN);
@@ -133,14 +135,19 @@ public class ReversiGameService {
             throw new InvalidPlayerMoveRequestException("Move was requested by RED player '" + player.getPlayerName() + "' which should be waiting.");
         }
 
-        Optional<Spot> spotOptional = spotRepository.findByXColumnAndYRowAndReversiGame(placeRequest.getXColumn(), placeRequest.getYRow(), reversiGame);
+        Optional<Spot> spotOptional = spotRepository.findByXColumnAndYRowAndReversiGame(
+                placeRequest.getXColumn(),
+                placeRequest.getYRow(),
+                reversiGame
+        );
         if (spotOptional.isEmpty())
             throw new InvalidPlayerMoveRequestException("Failed to find spot requested");
 
         Spot spot = spotOptional.get();
 
         if (spot.hasPiece())
-            throw new InvalidPlayerMoveRequestException("Piece already exists in spot (" + placeRequest.getXColumn() + ", " + placeRequest.getYRow() + ")");
+            throw new InvalidPlayerMoveRequestException("Piece already exists in spot (" + placeRequest.getXColumn()
+                    + ", " + placeRequest.getYRow() + ")");
 
         spot.setHasPiece(true);
         spot.setIsRedPiece(player.isRed());
