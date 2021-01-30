@@ -124,7 +124,8 @@ public class ReversiGameService {
             reversiGame.setGameManagementStatus(GameManagementStatus.WAITING_FOR_READY_UP_RED);
         } else if ((player.isRed() && reversiGame.getGameManagementStatus().equals(GameManagementStatus.WAITING_FOR_READY_UP_RED))
                 || (!player.isRed() && reversiGame.getGameManagementStatus().equals(GameManagementStatus.WAITING_FOR_READY_UP_BLUE))) {
-            reversiGame.setGameManagementStatus(GameManagementStatus.WAITING_RED_TURN);
+            // Blue goes first
+            reversiGame.setGameManagementStatus(GameManagementStatus.WAITING_BLUE_TURN);
         } else {
             throw new InvalidGameManagementStatusStateException("Player isRed=" + player.isRed() + " has already readied up for game '" + gameUid + "' but is trying to ready up again.");
         }
@@ -134,7 +135,7 @@ public class ReversiGameService {
         return reversiGame;
     }
 
-    public void requestSkipTurn(String gameUid, String playerUid) throws InvalidPlayerMoveException {
+    public void requestSkipTurn(String gameUid, String playerUid) {
         ReversiGame reversiGame = findGame(gameUid);
 
         checkGameStatus(reversiGame, GameManagementStatus.WAITING_BLUE_TURN, GameManagementStatus.WAITING_RED_TURN);

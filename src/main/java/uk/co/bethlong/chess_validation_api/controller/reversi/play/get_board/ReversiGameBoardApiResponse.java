@@ -8,6 +8,8 @@ import java.util.List;
 public class ReversiGameBoardApiResponse {
     public Integer xColumnTotal;
     public Integer yRowTotal;
+    public Integer redTotal;
+    public Integer blueTotal;
     public List<BoardSlot> board;
     public Date dateCreated;
     public Date dateFinished;

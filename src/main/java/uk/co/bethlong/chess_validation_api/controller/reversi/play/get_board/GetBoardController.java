@@ -44,6 +44,8 @@ public class GetBoardController {
         apiResponse.victoryStatus = reversiGame.getVictoryStatus();
         apiResponse.xColumnTotal = reversiGame.getxColumnCount();
         apiResponse.yRowTotal = reversiGame.getyRowCount();
+        apiResponse.blueTotal = reversiGame.getTotalBluePieces();
+        apiResponse.redTotal = reversiGame.getTotalRedPieces();
 
         List<BoardSlot> boardSlotList = new LinkedList<>();
         List<Spot> spotList = spotRepository.findByReversiGame(reversiGame);

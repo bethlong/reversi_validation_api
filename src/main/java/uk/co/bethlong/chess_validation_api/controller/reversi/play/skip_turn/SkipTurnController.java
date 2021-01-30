@@ -5,7 +5,7 @@ import uk.co.bethlong.chess_validation_api.model.game.InvalidPlayerMoveException
 import uk.co.bethlong.chess_validation_api.model.game.reversi.ReversiGameService;
 
 @RestController
-@RequestMapping("/reversi/make-move")
+@RequestMapping("/reversi/skip-turn")
 public class SkipTurnController {
 
     private final ReversiGameService reversiGameService;
@@ -22,15 +22,7 @@ public class SkipTurnController {
     {
         SkipTurnApiResponse skipTurnApiResponse = new SkipTurnApiResponse();
 
-        try {
-            reversiGameService.requestSkipTurn(gameUid, playerUid);
-        } catch (InvalidPlayerMoveException e) {
-            skipTurnApiResponse.failureReason = e.getMessage();
-            skipTurnApiResponse.hasSucceeded = false;
-            skipTurnApiResponse.isValidMove = false;
-
-            return skipTurnApiResponse;
-        }
+        reversiGameService.requestSkipTurn(gameUid, playerUid);
 
         skipTurnApiResponse.hasSucceeded = true;
         skipTurnApiResponse.isValidMove = true;

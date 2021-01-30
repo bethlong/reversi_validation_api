@@ -25,6 +25,11 @@ public class CreateGameController {
     @GetMapping
     public CreateGameApiResponse getCreateGame(@RequestParam("playerName") String playerName, @RequestParam(value = "isRed", required = false, defaultValue = "true") Boolean isRed)
     {
+        if (playerName == null || playerName.isEmpty())
+        {
+            throw new IllegalArgumentException("Invalid player name, please specify a player name");
+        }
+
         ReversiGame reversiGame = reversiGameService.createNewGame(playerName, isRed);
         Optional<ReversiPlayer> reversiPlayer = reversiPlayerService.getPlayerInGame(reversiGame, isRed);
         if (reversiPlayer.isEmpty())

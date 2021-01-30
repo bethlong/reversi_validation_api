@@ -12,7 +12,7 @@ import uk.co.bethlong.chess_validation_api.model.game.reversi.ReversiPlayerServi
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/reversi/register-other-player")
+@RequestMapping("/reversi/join-game")
 public class RegisterOtherPlayerController {
     private final ReversiPlayerService reversiPlayerService;
     private final ReversiGameService reversiGameService;

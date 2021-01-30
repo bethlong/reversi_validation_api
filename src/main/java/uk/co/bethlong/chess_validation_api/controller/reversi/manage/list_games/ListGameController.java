@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/reversi/get-games")
+@RequestMapping("/reversi/games")
 public class ListGameController {
 
     private final ReversiGameRepository reversiGameRepository;

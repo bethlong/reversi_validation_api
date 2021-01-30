@@ -9,8 +9,10 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import uk.co.bethlong.chess_validation_api.model.database.game.reversi.ReversiGame;
 import uk.co.bethlong.chess_validation_api.model.database.game.reversi.ReversiPlayer;
+import uk.co.bethlong.chess_validation_api.model.game.reversi.GameManagementStatus;
 import uk.co.bethlong.chess_validation_api.model.game.reversi.ReversiGameService;
 import uk.co.bethlong.chess_validation_api.model.game.reversi.ReversiPlayerService;
+import uk.co.bethlong.chess_validation_api.model.game.reversi.VictoryStatus;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
@@ -33,8 +35,7 @@ public class WaitForTurnController {
     }
 
     @GetMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<TurnWaitApiResponse> streamFlux(@RequestParam String gameUid, @RequestParam String playerUid) {
-
+    public Flux<TurnWaitApiResponse> streamFlux(@RequestParam final String gameUid, @RequestParam final String playerUid) {
         final ZonedDateTime timeoutCap = ZonedDateTime.now().plusMinutes(fluxTimeoutCap);
         return Flux.interval(Duration.ofSeconds(1)).takeWhile(t -> ZonedDateTime.now().equals(timeoutCap))
                 .map(sequence ->
@@ -45,11 +46,19 @@ public class WaitForTurnController {
                     TurnWaitApiResponse turnWaitApiResponse = new TurnWaitApiResponse();
                     turnWaitApiResponse.gameUid = reversiGame.getGameUid();
                     turnWaitApiResponse.playerName = reversiPlayer.getPlayerName();
+                    turnWaitApiResponse.victoryStatus = reversiGame.getVictoryStatus();
+
+                    if (!reversiGame.getGameManagementStatus().equals(GameManagementStatus.WAITING_RED_TURN) && !reversiGame.getGameManagementStatus().equals(GameManagementStatus.WAITING_BLUE_TURN))
+                    {
+                        return turnWaitApiResponse;
+                    }
 
                     if (reversiPlayer.isRed())
                         turnWaitApiResponse.isTurn = reversiGame.isTurn(true);
                     else
                         turnWaitApiResponse.isTurn = reversiGame.isTurn(false);
+
+                    turnWaitApiResponse.disconnectPlease = !reversiGame.getVictoryStatus().equals(VictoryStatus.NONE) || turnWaitApiResponse.isTurn
 
                     return turnWaitApiResponse;
                 });
