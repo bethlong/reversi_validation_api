@@ -157,18 +157,36 @@ public class ReversiGameService {
         placeRequestRepository.save(placeRequest);
 
         Pageable pageable = PageRequest.of(0, maxSkipsBeforeLost);
-        List<PlaceRequest> lastPlaceRequestList = placeRequestRepository.findByReversiGameAndPlayerOrderByRequestedDateDesc(reversiGame, player, pageable);
+        List<PlaceRequest> lastCurrentPlayerPlaceRequestList = placeRequestRepository.findByReversiGameAndPlayerOrderByRequestedDateDesc(reversiGame, player, pageable);
 
-        boolean isAllPreviousTurnsSkips = true;
-        for (PlaceRequest previousPlaceRequest : lastPlaceRequestList)
+        boolean isAllPreviousCurrentPlayerTurnsSkips = true;
+        for (PlaceRequest previousPlaceRequest : lastCurrentPlayerPlaceRequestList)
         {
             if (!previousPlaceRequest.isSkip())
-                isAllPreviousTurnsSkips = false;
+                isAllPreviousCurrentPlayerTurnsSkips = false;
         }
 
-        if (isAllPreviousTurnsSkips) {
-            reversiGame.setVictoryStatus(player.isRed() ? VictoryStatus.BLUE_VICTORY : VictoryStatus.RED_VICTORY);
-            reversiGame.setGameManagementStatus(GameManagementStatus.GAME_ENDED);
+        if (isAllPreviousCurrentPlayerTurnsSkips) {
+            List<PlaceRequest> lastOtherPlayerPlaceRequestList = placeRequestRepository.findByReversiGameAndPlayerOrderByRequestedDateDesc(reversiGame, player, pageable);
+
+            boolean isAllPreviousOtherPlayerTurnsSkips = true;
+            for (PlaceRequest previousPlaceRequest : lastOtherPlayerPlaceRequestList)
+            {
+                if (!previousPlaceRequest.isSkip())
+                    isAllPreviousOtherPlayerTurnsSkips = false;
+            }
+
+            if (isAllPreviousOtherPlayerTurnsSkips)
+            {
+                reversiGame.setVictoryStatus(VictoryStatus.DRAW);
+                reversiGame.setGameManagementStatus(GameManagementStatus.GAME_ENDED_BOTH_SKIPPED_TOO_MANY_TURNS);
+            }
+            else
+            {
+                reversiGame.setVictoryStatus(player.isRed() ? VictoryStatus.BLUE_VICTORY : VictoryStatus.RED_VICTORY);
+                reversiGame.setGameManagementStatus(GameManagementStatus.GAME_ENDED_LOST_PLAYER_SKIPPED_TOO_MANY_TURNS);
+            }
+
         }
         else
         {
@@ -286,7 +304,7 @@ public class ReversiGameService {
                     logicService.declareWinner(reversiGame)
             );
 
-            reversiGame.setGameManagementStatus(GameManagementStatus.GAME_ENDED);
+            reversiGame.setGameManagementStatus(GameManagementStatus.GAME_ENDED_NO_SPOTS_LEFT);
         }
         else
         {
