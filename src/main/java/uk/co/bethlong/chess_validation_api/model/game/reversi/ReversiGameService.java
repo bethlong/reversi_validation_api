@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import uk.co.bethlong.chess_validation_api.controller.error.InvalidGameUidException;
 import uk.co.bethlong.chess_validation_api.model.database.game.reversi.*;
 import uk.co.bethlong.chess_validation_api.model.game.InvalidPlayerMoveRequestException;
+import uk.co.bethlong.chess_validation_api.model.game.reversi.exception.InvalidGameManagementStatusStateException;
+import uk.co.bethlong.chess_validation_api.model.game.reversi.exception.NoPlayerSlotAvailableException;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -1,4 +1,4 @@
-package uk.co.bethlong.chess_validation_api.model.game.reversi;
+package uk.co.bethlong.chess_validation_api.model.game.reversi.exception;
 
 public class NoPlayerSlotAvailableException extends RuntimeException {
     public NoPlayerSlotAvailableException() {
