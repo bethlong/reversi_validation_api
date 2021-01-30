@@ -58,7 +58,7 @@ public class WaitForTurnController {
                     else
                         turnWaitApiResponse.isTurn = reversiGame.isTurn(false);
 
-                    turnWaitApiResponse.disconnectPlease = !reversiGame.getVictoryStatus().equals(VictoryStatus.NONE) || turnWaitApiResponse.isTurn
+                    turnWaitApiResponse.disconnectPlease = !reversiGame.getVictoryStatus().equals(VictoryStatus.NONE) || turnWaitApiResponse.isTurn;
 
                     return turnWaitApiResponse;
                 });
