@@ -28,7 +28,7 @@ class ReversiGameServiceSpec extends Specification {
 
         reversiPlayerService = Mock(ReversiPlayerService)
 
-        reversiGameService = new ReversiGameService(placeRequestRepository, reversiGameRepository, reversiPlayerService, spotRepository)
+        reversiGameService = new ReversiGameService(placeRequestRepository, reversiGameRepository, reversiPlayerService, spotRepository, logicService, maxSkipsBeforeLost)
     }
 
     @Unroll("Given a player name '#playerName' and colour isRed=#isRed, a new game should be created")

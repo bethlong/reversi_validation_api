@@ -1,6 +1,7 @@
 package uk.co.bethlong.chess_validation_api.model.database.game.reversi;
 
 import javax.persistence.*;
+import java.util.Date;
 
 @Entity
 public class PlaceRequest {
@@ -19,6 +20,18 @@ public class PlaceRequest {
     private int xColumn;
     @Column
     private int yRow;
+    @Column
+    private boolean isSkip;
+
+    @GeneratedValue
+    @Column
+    private Date requestedDate;
+
+    public PlaceRequest() {
+        isSkip = false;
+        xColumn = -1;
+        yRow = -1;
+    }
 
     public int getMoveId() {
         return moveId;
@@ -54,5 +67,13 @@ public class PlaceRequest {
 
     public void setPlayer(ReversiPlayer player) {
         this.player = player;
+    }
+
+    public boolean isSkip() {
+        return isSkip;
+    }
+
+    public void setSkip(boolean skip) {
+        isSkip = skip;
     }
 }

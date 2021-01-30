@@ -66,6 +66,7 @@ public class GetBoardController {
             move.playerName = placeRequest.getPlayer().getPlayerName();
             move.xColumn = placeRequest.getXColumn();
             move.yRow = placeRequest.getYRow();
+            move.isSkip = placeRequest.isSkip();
             moveList.add(move);
         }
         apiResponse.moveList = moveList;

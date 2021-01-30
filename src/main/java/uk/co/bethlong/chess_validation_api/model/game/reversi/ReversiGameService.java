@@ -2,6 +2,9 @@ package uk.co.bethlong.chess_validation_api.model.game.reversi;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import uk.co.bethlong.chess_validation_api.controller.error.InvalidGameUidException;
 import uk.co.bethlong.chess_validation_api.model.database.game.reversi.*;
@@ -11,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class ReversiGameService {
@@ -21,13 +23,19 @@ public class ReversiGameService {
     private final ReversiGameRepository reversiGameRepository;
     private final ReversiPlayerService reversiPlayerService;
     private final SpotRepository spotRepository;
+    private final ReversiGameLogicService logicService;
+
+    private final int maxSkipsBeforeLost;
 
     public ReversiGameService(PlaceRequestRepository placeRequestRepository, ReversiGameRepository reversiGameRepository,
-                              ReversiPlayerService reversiPlayerService, SpotRepository spotRepository) {
+                              ReversiPlayerService reversiPlayerService, SpotRepository spotRepository,
+                              ReversiGameLogicService logicService, @Value("${uk.co.bethlong.api.model.reversi.max-skip-requests-before-auto-loss}") int maxSkipsBeforeLost) {
         this.placeRequestRepository = placeRequestRepository;
         this.reversiGameRepository = reversiGameRepository;
         this.reversiPlayerService = reversiPlayerService;
         this.spotRepository = spotRepository;
+        this.logicService = logicService;
+        this.maxSkipsBeforeLost = maxSkipsBeforeLost;
     }
 
     public ReversiGame createNewGame(String playerName, boolean isRed) {
@@ -123,12 +131,44 @@ public class ReversiGameService {
         return reversiGame;
     }
 
-    public ReversiGame findGame(String gameUid) {
-        Optional<ReversiGame> reversiGameOptional = reversiGameRepository.findById(gameUid);
-        if (reversiGameOptional.isEmpty())
-            throw new InvalidGameUidException("GameUID '" + gameUid + "' is invalid.");
+    public void requestSkipTurn(String gameUid, String playerUid) throws InvalidPlayerMoveRequestException {
+        ReversiGame reversiGame = findGame(gameUid);
 
-        return reversiGameOptional.get();
+        checkGameStatus(reversiGame, GameManagementStatus.WAITING_BLUE_TURN, GameManagementStatus.WAITING_RED_TURN);
+
+        ReversiPlayer player = reversiPlayerService.getPlayerInGame(reversiGame, playerUid);
+
+        PlaceRequest placeRequest = new PlaceRequest();
+        placeRequest.setPlayer(player);
+        placeRequest.setReversiGame(reversiGame);
+        placeRequest.setSkip(true);
+
+        if (reversiGame.isTurn(true) && !player.isRed()) {
+            throw new InvalidPlayerMoveRequestException("Skip turn was requested by BLUE player '" + player.getPlayerName() + "' which should be waiting.");
+        }
+
+        if (reversiGame.isTurn(false) && player.isRed()) {
+            throw new InvalidPlayerMoveRequestException("Skip turn was requested by RED player '" + player.getPlayerName() + "' which should be waiting.");
+        }
+
+        placeRequestRepository.save(placeRequest);
+
+        Pageable pageable = PageRequest.of(0, maxSkipsBeforeLost);
+        List<PlaceRequest> lastPlaceRequests = placeRequestRepository.findByReversiGameAndPlayerOrderByRequestedDateDesc(reversiGame, player, pageable);
+
+        if (lastPlaceRequests.size() == maxSkipsBeforeLost) {
+            reversiGame.setVictoryStatus(player.isRed() ? VictoryStatus.BLUE_VICTORY : VictoryStatus.RED_VICTORY);
+            reversiGame.setGameManagementStatus(GameManagementStatus.GAME_ENDED);
+        }
+        else
+        {
+            if (reversiGame.isTurn(true))
+                reversiGame.setGameManagementStatus(GameManagementStatus.WAITING_BLUE_TURN);
+            else if (reversiGame.isTurn(false))
+                reversiGame.setGameManagementStatus(GameManagementStatus.WAITING_RED_TURN);
+        }
+
+        reversiGameRepository.save(reversiGame);
     }
 
     public void makePlacement(String gameUid, String playerUid, Integer xColumn, Integer yRow)
@@ -153,6 +193,7 @@ public class ReversiGameService {
             throw new InvalidPlayerMoveRequestException("Move was requested by RED player '" + player.getPlayerName() + "' which should be waiting.");
         }
 
+        // Build Board Representation: Spot Grid
         List<Spot> spotList = spotRepository.findByReversiGame(reversiGame);
         Spot targetSpot = null;
         Spot[][] spotGrid = new Spot[reversiGame.getxColumnCount()][reversiGame.getyRowCount()];
@@ -164,6 +205,7 @@ public class ReversiGameService {
             }
         }
 
+        // Validate Move
         if (targetSpot == null)
             throw new InvalidPlayerMoveRequestException("Failed to find spot requested");
 
@@ -171,15 +213,14 @@ public class ReversiGameService {
             throw new InvalidPlayerMoveRequestException("Piece already exists in spot (" + placeRequest.getXColumn()
                     + ", " + placeRequest.getYRow() + ")");
 
-
-        Optional<Spot> lesserXEqualYOptional = getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), -1, 0);
-        Optional<Spot> greaterXEqualYOptional = getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), 1, 0);
-        Optional<Spot> equalXLesserYOptional = getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), 0, -1);
-        Optional<Spot> equalXGreaterYOptional = getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), 0, 1);
-        Optional<Spot> lesserXLesserYOptional = getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), -1, -1);
-        Optional<Spot> greaterXLesserYOptional = getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), 1, -1);
-        Optional<Spot> lesserXGreaterYOptional = getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), -1, 1);
-        Optional<Spot> greaterXGreaterYOptional = getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), 1, 1);
+        Optional<Spot> lesserXEqualYOptional = logicService.getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), -1, 0);
+        Optional<Spot> greaterXEqualYOptional = logicService.getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), 1, 0);
+        Optional<Spot> equalXLesserYOptional = logicService.getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), 0, -1);
+        Optional<Spot> equalXGreaterYOptional = logicService.getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), 0, 1);
+        Optional<Spot> lesserXLesserYOptional = logicService.getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), -1, -1);
+        Optional<Spot> greaterXLesserYOptional = logicService.getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), 1, -1);
+        Optional<Spot> lesserXGreaterYOptional = logicService.getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), -1, 1);
+        Optional<Spot> greaterXGreaterYOptional = logicService.getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), 1, 1);
 
         boolean atLeastOneMatch = lesserXEqualYOptional.isPresent() || greaterXEqualYOptional.isPresent()
                 || equalXLesserYOptional.isPresent() || equalXGreaterYOptional.isPresent()
@@ -188,18 +229,21 @@ public class ReversiGameService {
         if (!atLeastOneMatch)
             throw new InvalidPlayerMoveRequestException("Not a valid move: no matching pieces of same colour");
 
+        // Make Move
         targetSpot.setHasPiece(true);
         targetSpot.setIsRedPiece(player.isRed());
 
-        if (lesserXEqualYOptional.isPresent()) flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), -1, 0);
-        if (greaterXEqualYOptional.isPresent()) flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), 1, 0);
-        if (equalXLesserYOptional.isPresent()) flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), 0, -1);
-        if (equalXGreaterYOptional.isPresent()) flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), 0, 1);
-        if (lesserXLesserYOptional.isPresent()) flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), -1, -1);
-        if (greaterXLesserYOptional.isPresent()) flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), 1, -1);
-        if (lesserXGreaterYOptional.isPresent()) flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), -1, 1);
-        if (greaterXGreaterYOptional.isPresent()) flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), 1, 1);
+        // Flip Other Pieces
+        if (lesserXEqualYOptional.isPresent()) logicService.flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), -1, 0);
+        if (greaterXEqualYOptional.isPresent()) logicService.flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), 1, 0);
+        if (equalXLesserYOptional.isPresent()) logicService.flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), 0, -1);
+        if (equalXGreaterYOptional.isPresent()) logicService.flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), 0, 1);
+        if (lesserXLesserYOptional.isPresent()) logicService.flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), -1, -1);
+        if (greaterXLesserYOptional.isPresent()) logicService.flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), 1, -1);
+        if (lesserXGreaterYOptional.isPresent()) logicService.flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), -1, 1);
+        if (greaterXGreaterYOptional.isPresent()) logicService.flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), 1, 1);
 
+        // Total New Scores
         int blueCount = 0;
         int redCount = 0;
         for (Spot spot : spotList) {
@@ -213,15 +257,44 @@ public class ReversiGameService {
         reversiGame.setTotalRedPieces(redCount);
         reversiGame.setTotalBluePieces(blueCount);
 
+        // Save entities to DB
         spotRepository.saveAll(spotList);
         placeRequestRepository.save(placeRequest);
 
-        if (reversiGame.isTurn(true))
-            reversiGame.setGameManagementStatus(GameManagementStatus.WAITING_BLUE_TURN);
-        else if (reversiGame.isTurn(false))
-            reversiGame.setGameManagementStatus(GameManagementStatus.WAITING_RED_TURN);
+        // Figure out if game has ended
+        boolean hasSpotsLeft = false;
+        for (Spot spot : spotList) {
+            if (!spot.hasPiece()) {
+                hasSpotsLeft = true;
+                break;
+            }
+        }
+
+        // If game has ended
+        if (!hasSpotsLeft) {
+            reversiGame.setVictoryStatus(
+                    logicService.declareWinner(reversiGame)
+            );
+
+            reversiGame.setGameManagementStatus(GameManagementStatus.GAME_ENDED);
+        }
+        else
+        {
+            if (reversiGame.isTurn(true))
+                reversiGame.setGameManagementStatus(GameManagementStatus.WAITING_BLUE_TURN);
+            else if (reversiGame.isTurn(false))
+                reversiGame.setGameManagementStatus(GameManagementStatus.WAITING_RED_TURN);
+        }
 
         reversiGameRepository.save(reversiGame);
+    }
+
+    public ReversiGame findGame(String gameUid) {
+        Optional<ReversiGame> reversiGameOptional = reversiGameRepository.findById(gameUid);
+        if (reversiGameOptional.isEmpty())
+            throw new InvalidGameUidException("GameUID '" + gameUid + "' is invalid.");
+
+        return reversiGameOptional.get();
     }
 
     private void checkGameStatus(ReversiGame reversiGame, GameManagementStatus... gameManagementStatuses) {
@@ -236,55 +309,5 @@ public class ReversiGameService {
                         + "' was '" + reversiGame.getGameManagementStatus() + "', but a game update only allowed for statuses '"
                         + Arrays.toString(gameManagementStatuses) + "' is being requested."
         );
-    }
-
-    private Optional<Spot> getPossibleSpotInDirection(Spot[][] spotGrid, boolean isStartSpot, Spot startingSpot, boolean targetColour, int xModifier, int yModifier) {
-        int nextX = startingSpot.getXColumn() + xModifier;
-        int nextY = startingSpot.getYRow() + yModifier;
-
-        // Presumes grid has >1 columns
-        if (nextX < 0 || nextX >= spotGrid.length || nextY < 0 || nextY >= spotGrid[0].length) {
-            return Optional.empty();
-        }
-
-        Spot nextSpot;
-        try {
-            nextSpot = spotGrid[nextX][nextY];
-        } catch (ArrayIndexOutOfBoundsException exception) {
-            LOGGER.error("Edge of board reached without being caught!", exception);
-            return Optional.empty();
-        }
-
-        boolean isNextSpotEmpty = !nextSpot.hasPiece();
-        boolean isNextSpotSameColour = !isNextSpotEmpty && nextSpot.isRedPiece() == targetColour;
-
-        if (isNextSpotEmpty && !isStartSpot) {
-            return Optional.of(nextSpot);
-        } else if (!isNextSpotSameColour) {
-            return getPossibleSpotInDirection(spotGrid, false, nextSpot, targetColour, xModifier, yModifier);
-        } else {
-            return Optional.empty();
-        }
-    }
-
-    private void flipSpotsInDirection(Spot[][] spotGrid, Spot startingSpot, boolean targetColour, int xModifier, int yModifier) {
-        int nextX = startingSpot.getXColumn() + xModifier;
-        int nextY = startingSpot.getYRow() + yModifier;
-
-        // Presumes grid has >1 columns
-        if (nextX < 0 || nextX >= spotGrid.length || nextY < 0 || nextY >= spotGrid[0].length) {
-            throw new IllegalArgumentException("Asked for a flip in a direction that has no valid end!");
-        }
-
-        Spot nextSpot;
-        try {
-            nextSpot = spotGrid[nextX][nextY];
-        } catch (ArrayIndexOutOfBoundsException exception) {
-            throw new IllegalArgumentException("Asked for a flip in a direction that has no valid end! Went off board.");
-        }
-
-        if (nextSpot.hasPiece() && nextSpot.isRedPiece() != targetColour) {
-            flipSpotsInDirection(spotGrid, nextSpot, targetColour, xModifier, yModifier);
-        }
     }
 }
