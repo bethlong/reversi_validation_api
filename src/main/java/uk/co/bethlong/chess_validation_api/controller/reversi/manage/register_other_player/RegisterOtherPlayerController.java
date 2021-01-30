@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import uk.co.bethlong.chess_validation_api.model.database.game.reversi.ReversiGame;
 import uk.co.bethlong.chess_validation_api.model.database.game.reversi.ReversiPlayer;
+import uk.co.bethlong.chess_validation_api.model.game.reversi.ReversiGameManagementService;
 import uk.co.bethlong.chess_validation_api.model.game.reversi.ReversiGameService;
 import uk.co.bethlong.chess_validation_api.model.game.reversi.ReversiPlayerService;
 
@@ -15,17 +16,17 @@ import java.util.Optional;
 @RequestMapping("/reversi/join-game")
 public class RegisterOtherPlayerController {
     private final ReversiPlayerService reversiPlayerService;
-    private final ReversiGameService reversiGameService;
+    private final ReversiGameManagementService managementService;
 
-    public RegisterOtherPlayerController(ReversiPlayerService reversiPlayerService, ReversiGameService reversiGameService) {
+    public RegisterOtherPlayerController(ReversiPlayerService reversiPlayerService, ReversiGameManagementService managementService) {
         this.reversiPlayerService = reversiPlayerService;
-        this.reversiGameService = reversiGameService;
+        this.managementService = managementService;
     }
 
     @GetMapping
     public RegisterOtherPlayerAPIResponse registerOtherPlayer(@RequestParam String gameUid, @RequestParam String playerName, @RequestParam(required = false, defaultValue = "false") Boolean isRed)
     {
-        ReversiGame reversiGame = reversiGameService.registerOtherPlayer(gameUid, playerName, isRed);
+        ReversiGame reversiGame = managementService.registerOtherPlayer(gameUid, playerName, isRed);
         Optional<ReversiPlayer> otherPlayer = reversiPlayerService.getPlayerInGame(reversiGame, isRed);
         if (otherPlayer.isEmpty())
         {

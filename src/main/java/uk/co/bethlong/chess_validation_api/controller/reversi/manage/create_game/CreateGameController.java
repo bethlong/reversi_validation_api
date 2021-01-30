@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import uk.co.bethlong.chess_validation_api.model.database.game.reversi.ReversiGame;
 import uk.co.bethlong.chess_validation_api.model.database.game.reversi.ReversiPlayer;
-import uk.co.bethlong.chess_validation_api.model.game.reversi.ReversiGameService;
+import uk.co.bethlong.chess_validation_api.model.game.reversi.ReversiGameManagementService;
 import uk.co.bethlong.chess_validation_api.model.game.reversi.ReversiPlayerService;
 
 import java.util.Optional;
@@ -14,11 +14,11 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/reversi/create-game")
 public class CreateGameController {
-    private final ReversiGameService reversiGameService;
+    private final ReversiGameManagementService managementService;
     private final ReversiPlayerService reversiPlayerService;
 
-    public CreateGameController(ReversiGameService reversiGameService, ReversiPlayerService reversiPlayerService) {
-        this.reversiGameService = reversiGameService;
+    public CreateGameController(ReversiGameManagementService managementService, ReversiPlayerService reversiPlayerService) {
+        this.managementService = managementService;
         this.reversiPlayerService = reversiPlayerService;
     }
 
@@ -30,7 +30,7 @@ public class CreateGameController {
             throw new IllegalArgumentException("Invalid player name, please specify a player name");
         }
 
-        ReversiGame reversiGame = reversiGameService.createNewGame(playerName, isRed);
+        ReversiGame reversiGame = managementService.createNewGame(playerName, isRed);
         Optional<ReversiPlayer> reversiPlayer = reversiPlayerService.getPlayerInGame(reversiGame, isRed);
         if (reversiPlayer.isEmpty())
         {

@@ -7,7 +7,10 @@ import uk.co.bethlong.chess_validation_api.model.database.game.reversi.ReversiGa
 import uk.co.bethlong.chess_validation_api.model.database.game.reversi.ReversiGameRepository
 import uk.co.bethlong.chess_validation_api.model.database.game.reversi.SpotRepository
 
-class ReversiGameServiceSpec extends Specification {
+class ReversiGameService_createNewGameSpec extends Specification {
+
+    static String DEFAULT_PLAYER_A_NAME = "TestA"
+    static String DEFAULT_PLAYER_B_NAME = "TestB"
 
     PlaceRequestRepository placeRequestRepository
     ReversiGameRepository reversiGameRepository

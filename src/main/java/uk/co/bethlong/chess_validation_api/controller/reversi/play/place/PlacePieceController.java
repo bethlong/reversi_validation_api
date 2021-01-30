@@ -2,16 +2,15 @@ package uk.co.bethlong.chess_validation_api.controller.reversi.play.place;
 
 import org.springframework.web.bind.annotation.*;
 import uk.co.bethlong.chess_validation_api.model.game.InvalidPlayerMoveException;
-import uk.co.bethlong.chess_validation_api.model.game.reversi.ReversiGameService;
+import uk.co.bethlong.chess_validation_api.model.game.reversi.ReversiGamePlayService;
 
 @RestController
 @RequestMapping("/reversi/make-move")
 public class PlacePieceController {
+    private final ReversiGamePlayService reversiGamePlayService;
 
-    private final ReversiGameService reversiGameService;
-
-    public PlacePieceController(ReversiGameService reversiGameService) {
-        this.reversiGameService = reversiGameService;
+    public PlacePieceController(ReversiGamePlayService reversiGamePlayService) {
+        this.reversiGamePlayService = reversiGamePlayService;
     }
 
     @GetMapping
@@ -25,7 +24,7 @@ public class PlacePieceController {
         PlacePieceApiResponse placePieceApiResponse = new PlacePieceApiResponse();
 
         try {
-            reversiGameService.makePlacement(gameUid, playerUid, xColumn, yRow);
+            reversiGamePlayService.makePlacement(gameUid, playerUid, xColumn, yRow);
         } catch (InvalidPlayerMoveException e) {
             placePieceApiResponse.failureReason = e.getMessage();
             placePieceApiResponse.hasSucceeded = false;

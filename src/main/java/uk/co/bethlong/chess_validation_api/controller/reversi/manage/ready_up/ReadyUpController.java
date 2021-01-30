@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import uk.co.bethlong.chess_validation_api.model.database.game.reversi.ReversiGame;
 import uk.co.bethlong.chess_validation_api.model.database.game.reversi.ReversiPlayer;
+import uk.co.bethlong.chess_validation_api.model.game.reversi.ReversiGameManagementService;
 import uk.co.bethlong.chess_validation_api.model.game.reversi.ReversiGameService;
 import uk.co.bethlong.chess_validation_api.model.game.reversi.ReversiPlayerService;
 
@@ -15,10 +16,12 @@ import java.util.Optional;
 @RequestMapping("/reversi/ready-up")
 public class ReadyUpController {
 
+    private final ReversiGameManagementService managementService;
     private final ReversiGameService reversiGameService;
     private final ReversiPlayerService reversiPlayerService;
 
-    public ReadyUpController(ReversiGameService reversiGameService, ReversiPlayerService reversiPlayerService) {
+    public ReadyUpController(ReversiGameManagementService managementService, ReversiGameService reversiGameService, ReversiPlayerService reversiPlayerService) {
+        this.managementService = managementService;
         this.reversiGameService = reversiGameService;
         this.reversiPlayerService = reversiPlayerService;
     }
@@ -26,7 +29,7 @@ public class ReadyUpController {
     @GetMapping
     public ReadyUpStatusApiResponse readyUp(@RequestParam String gameUid, @RequestParam String playerUid)
     {
-        reversiGameService.readyUpPlayer(gameUid, playerUid);
+        managementService.readyUpPlayer(gameUid, playerUid);
 
         ReversiGame reversiGame = reversiGameService.findGame(gameUid);
         Optional<ReversiPlayer> redPlayerOptional = reversiPlayerService.getPlayerInGame(reversiGame, true);
