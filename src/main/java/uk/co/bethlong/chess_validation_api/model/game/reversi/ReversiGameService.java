@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import uk.co.bethlong.chess_validation_api.controller.error.InvalidGameUidException;
 import uk.co.bethlong.chess_validation_api.model.database.game.reversi.*;
+import uk.co.bethlong.chess_validation_api.model.game.InvalidPlayerMoveException;
 import uk.co.bethlong.chess_validation_api.model.game.InvalidPlayerMoveRequestException;
 import uk.co.bethlong.chess_validation_api.model.game.reversi.exception.InvalidGameManagementStatusStateException;
 import uk.co.bethlong.chess_validation_api.model.game.reversi.exception.NoPlayerSlotAvailableException;
@@ -133,7 +134,7 @@ public class ReversiGameService {
         return reversiGame;
     }
 
-    public void requestSkipTurn(String gameUid, String playerUid) throws InvalidPlayerMoveRequestException {
+    public void requestSkipTurn(String gameUid, String playerUid) throws InvalidPlayerMoveException {
         ReversiGame reversiGame = findGame(gameUid);
 
         checkGameStatus(reversiGame, GameManagementStatus.WAITING_BLUE_TURN, GameManagementStatus.WAITING_RED_TURN);
@@ -156,9 +157,16 @@ public class ReversiGameService {
         placeRequestRepository.save(placeRequest);
 
         Pageable pageable = PageRequest.of(0, maxSkipsBeforeLost);
-        List<PlaceRequest> lastPlaceRequests = placeRequestRepository.findByReversiGameAndPlayerOrderByRequestedDateDesc(reversiGame, player, pageable);
+        List<PlaceRequest> lastPlaceRequestList = placeRequestRepository.findByReversiGameAndPlayerOrderByRequestedDateDesc(reversiGame, player, pageable);
 
-        if (lastPlaceRequests.size() == maxSkipsBeforeLost) {
+        boolean isAllPreviousTurnsSkips = true;
+        for (PlaceRequest previousPlaceRequest : lastPlaceRequestList)
+        {
+            if (!previousPlaceRequest.isSkip())
+                isAllPreviousTurnsSkips = false;
+        }
+
+        if (isAllPreviousTurnsSkips) {
             reversiGame.setVictoryStatus(player.isRed() ? VictoryStatus.BLUE_VICTORY : VictoryStatus.RED_VICTORY);
             reversiGame.setGameManagementStatus(GameManagementStatus.GAME_ENDED);
         }
@@ -174,7 +182,7 @@ public class ReversiGameService {
     }
 
     public void makePlacement(String gameUid, String playerUid, Integer xColumn, Integer yRow)
-            throws InvalidPlayerMoveRequestException {
+            throws InvalidPlayerMoveException {
         ReversiGame reversiGame = findGame(gameUid);
 
         checkGameStatus(reversiGame, GameManagementStatus.WAITING_BLUE_TURN, GameManagementStatus.WAITING_RED_TURN);
@@ -209,10 +217,10 @@ public class ReversiGameService {
 
         // Validate Move
         if (targetSpot == null)
-            throw new InvalidPlayerMoveRequestException("Failed to find spot requested");
+            throw new InvalidPlayerMoveException("Failed to find spot requested");
 
         if (targetSpot.hasPiece())
-            throw new InvalidPlayerMoveRequestException("Piece already exists in spot (" + placeRequest.getXColumn()
+            throw new InvalidPlayerMoveException("Piece already exists in spot (" + placeRequest.getXColumn()
                     + ", " + placeRequest.getYRow() + ")");
 
         Optional<Spot> lesserXEqualYOptional = logicService.getPossibleSpotInDirection(spotGrid, true, targetSpot, player.isRed(), -1, 0);
@@ -229,7 +237,7 @@ public class ReversiGameService {
                 || lesserXLesserYOptional.isPresent() || greaterXLesserYOptional.isPresent()
                 || lesserXGreaterYOptional.isPresent() || greaterXGreaterYOptional.isPresent();
         if (!atLeastOneMatch)
-            throw new InvalidPlayerMoveRequestException("Not a valid move: no matching pieces of same colour");
+            throw new InvalidPlayerMoveException("Not a valid move: no matching pieces of same colour");
 
         // Make Move
         targetSpot.setHasPiece(true);

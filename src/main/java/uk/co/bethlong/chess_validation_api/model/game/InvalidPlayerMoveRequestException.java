@@ -1,7 +1,6 @@
 package uk.co.bethlong.chess_validation_api.model.game;
 
-public class InvalidPlayerMoveRequestException extends Exception {
-
+public class InvalidPlayerMoveRequestException extends RuntimeException {
     public InvalidPlayerMoveRequestException() {
     }
 

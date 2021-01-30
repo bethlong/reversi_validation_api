@@ -1,7 +1,7 @@
 package uk.co.bethlong.chess_validation_api.controller.reversi.play.skip_turn;
 
 import org.springframework.web.bind.annotation.*;
-import uk.co.bethlong.chess_validation_api.model.game.InvalidPlayerMoveRequestException;
+import uk.co.bethlong.chess_validation_api.model.game.InvalidPlayerMoveException;
 import uk.co.bethlong.chess_validation_api.model.game.reversi.ReversiGameService;
 
 @RestController
@@ -24,7 +24,7 @@ public class SkipTurnController {
 
         try {
             reversiGameService.requestSkipTurn(gameUid, playerUid);
-        } catch (InvalidPlayerMoveRequestException e) {
+        } catch (InvalidPlayerMoveException e) {
             skipTurnApiResponse.failureReason = e.getMessage();
             skipTurnApiResponse.hasSucceeded = false;
             skipTurnApiResponse.isValidMove = false;

@@ -23,6 +23,9 @@ public class ReversiPlayer {
     @Column
     private boolean isRed;
 
+    @Column
+    private int failedPlacementRequestsCount;
+
     public ReversiGame getReversiGame() {
         return reversiGame;
     }
@@ -61,5 +64,17 @@ public class ReversiPlayer {
 
     public void setRed(boolean red) {
         isRed = red;
+    }
+
+    public int getFailedPlacementRequestsCount() {
+        return failedPlacementRequestsCount;
+    }
+
+    public int incrementFailedPlacementRequestsCount() {
+        return failedPlacementRequestsCount++;
+    }
+
+    public void setFailedPlacementRequestsCount(int failedPlacementRequestsCount) {
+        this.failedPlacementRequestsCount = failedPlacementRequestsCount;
     }
 }

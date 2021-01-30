@@ -5,7 +5,7 @@ import uk.co.bethlong.chess_validation_api.model.database.game.chess.board.Board
 import uk.co.bethlong.chess_validation_api.model.database.game.chess.board.DefaultBoard;
 import uk.co.bethlong.chess_validation_api.model.database.game.chess.move.Move;
 import uk.co.bethlong.chess_validation_api.model.database.game.chess.move.MoveValidator;
-import uk.co.bethlong.chess_validation_api.model.game.InvalidPlayerMoveRequestException;
+import uk.co.bethlong.chess_validation_api.model.game.InvalidPlayerMoveException;
 
 import java.time.LocalDateTime;
 import java.util.LinkedList;
@@ -60,20 +60,20 @@ public class Game {
         this.gameManagementStatus = GameManagementStatus.WAITING_WHITE_TURN;
     }
 
-    public void makeMove(ChessPlayer player, Move move) throws InvalidPlayerMoveRequestException
+    public void makeMove(ChessPlayer player, Move move) throws InvalidPlayerMoveException
     {
         if (isWhitePlayersTurn() && !player.isWhite())
         {
-            throw new InvalidPlayerMoveRequestException("Move was requested by BLACK player '" + player.getPlayerName() + "' which should be waiting.");
+            throw new InvalidPlayerMoveException("Move was requested by BLACK player '" + player.getPlayerName() + "' which should be waiting.");
         }
 
         if (isBlackPlayersTurn() && player.isWhite())
         {
-            throw new InvalidPlayerMoveRequestException("Move was requested by WHITE player '" + player.getPlayerName() + "' which should be waiting.");
+            throw new InvalidPlayerMoveException("Move was requested by WHITE player '" + player.getPlayerName() + "' which should be waiting.");
         }
 
         if (!moveValidator.isValid(move))
-            throw new InvalidPlayerMoveRequestException("Move is not valid given current state of the board");
+            throw new InvalidPlayerMoveException("Move is not valid given current state of the board");
 
         // TODO Make the move
 
