@@ -11,5 +11,6 @@ public interface PlaceRequestRepository extends CrudRepository<PlaceRequest, Int
 
     List<PlaceRequest> findByReversiGame(ReversiGame reversiGame);
 
+    List<PlaceRequest> findByReversiGameOrderByRequestedDateDesc(ReversiGame reversiGame, Pageable pageable);
     List<PlaceRequest> findByReversiGameAndPlayerOrderByRequestedDateDesc(ReversiGame reversiGame, ReversiPlayer player, Pageable pageable);
 }

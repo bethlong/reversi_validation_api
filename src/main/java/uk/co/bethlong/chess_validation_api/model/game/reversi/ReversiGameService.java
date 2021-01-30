@@ -156,8 +156,8 @@ public class ReversiGameService {
 
         placeRequestRepository.save(placeRequest);
 
-        Pageable pageable = PageRequest.of(0, maxSkipsBeforeLost);
-        List<PlaceRequest> lastCurrentPlayerPlaceRequestList = placeRequestRepository.findByReversiGameAndPlayerOrderByRequestedDateDesc(reversiGame, player, pageable);
+        Pageable maxSkipsLimitPageable = PageRequest.of(0, maxSkipsBeforeLost);
+        List<PlaceRequest> lastCurrentPlayerPlaceRequestList = placeRequestRepository.findByReversiGameAndPlayerOrderByRequestedDateDesc(reversiGame, player, maxSkipsLimitPageable);
 
         boolean isAllPreviousCurrentPlayerTurnsSkips = true;
         for (PlaceRequest previousPlaceRequest : lastCurrentPlayerPlaceRequestList)
@@ -167,19 +167,20 @@ public class ReversiGameService {
         }
 
         if (isAllPreviousCurrentPlayerTurnsSkips) {
-            List<PlaceRequest> lastOtherPlayerPlaceRequestList = placeRequestRepository.findByReversiGameAndPlayerOrderByRequestedDateDesc(reversiGame, player, pageable);
+            Pageable limitPageable = PageRequest.of(0, 2);
+            List<PlaceRequest> lastTwoTurnsPlaceRequestList = placeRequestRepository.findByReversiGameOrderByRequestedDateDesc(reversiGame, limitPageable);
 
-            boolean isAllPreviousOtherPlayerTurnsSkips = true;
-            for (PlaceRequest previousPlaceRequest : lastOtherPlayerPlaceRequestList)
+            boolean isLastTwoTurnsSkips = true;
+            for (PlaceRequest previousPlaceRequest : lastTwoTurnsPlaceRequestList)
             {
                 if (!previousPlaceRequest.isSkip())
-                    isAllPreviousOtherPlayerTurnsSkips = false;
+                    isLastTwoTurnsSkips = false;
             }
 
-            if (isAllPreviousOtherPlayerTurnsSkips)
+            if (isLastTwoTurnsSkips)
             {
                 reversiGame.setVictoryStatus(VictoryStatus.DRAW);
-                reversiGame.setGameManagementStatus(GameManagementStatus.GAME_ENDED_BOTH_SKIPPED_TOO_MANY_TURNS);
+                reversiGame.setGameManagementStatus(GameManagementStatus.GAME_ENDED_BOTH_SKIPPED_SEQUENTIALLY);
             }
             else
             {
