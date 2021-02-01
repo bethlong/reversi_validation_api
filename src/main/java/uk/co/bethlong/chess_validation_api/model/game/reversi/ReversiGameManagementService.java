@@ -29,11 +29,11 @@ public class ReversiGameManagementService {
     }
 
     public ReversiGame createNewGame(String playerName, boolean isRed) {
-        int xColumnCount = 8;
-        int yRowCount = 8;
-
         if (playerName == null || playerName.isEmpty())
             throw new IllegalArgumentException("Invalid player name passed to method");
+
+        int xColumnCount = 8;
+        int yRowCount = 8;
 
         ReversiGame reversiGame = new ReversiGame();
         reversiGame.setxColumnCount(xColumnCount);

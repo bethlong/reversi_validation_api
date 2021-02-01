@@ -22,6 +22,14 @@ public class Spot {
     @Column
     private boolean isRedPiece;
 
+    public Spot() {
+        XColumn = -1;
+        YRow = -1;
+        reversiGame = null;
+        hasPiece = false;
+        isRedPiece = true;
+    }
+
     public void setXColumn(Integer XColumn) {
         this.XColumn = XColumn - 1;
     }
