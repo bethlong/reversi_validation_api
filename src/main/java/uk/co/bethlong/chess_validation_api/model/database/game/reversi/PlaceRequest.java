@@ -76,4 +76,8 @@ public class PlaceRequest {
     public void setSkip(boolean skip) {
         isSkip = skip;
     }
+
+    public boolean isForSpot(Spot spot) {
+        return spot.getXColumn() == this.getXColumn() && spot.getYRow() == this.getYRow();
+    }
 }

@@ -48,15 +48,15 @@ class ReversiGameServiceSpec extends Specification {
         given:
             reversiGame.getGameManagementStatus() >> gameStatus
         when:
-            reversiGameService.checkGameStatus(reversiGame, possibleGameStatuses.toArray())
+            reversiGameService.checkGameStatus(reversiGame, possibleGameStatuses.toArray(new GameManagementStatus[possibleGameStatuses.size()]))
         then:
             thrown(InvalidGameManagementStatusStateException)
         where:
             gameStatus | possibleGameStatuses
             GameManagementStatus.NONE | [GameManagementStatus.WAITING_SECOND_PLAYER_TO_JOIN, GameManagementStatus.WAITING_FOR_READY_UP_BOTH]
-            GameManagementStatus.GAME_ENDED_BOTH_SKIPPED_SEQUENTIALLY | [GameManagementStatus.WAITING_SECOND_PLAYER_TO_JOIN, GameManagementStatus.WAITING_FOR_READY_UP_BOTH]
+            GameManagementStatus.GAME_ENDED_NO_SPOTS_LEFT | [GameManagementStatus.WAITING_SECOND_PLAYER_TO_JOIN, GameManagementStatus.WAITING_FOR_READY_UP_BOTH]
             GameManagementStatus.GAME_ENDED_WITH_ERROR | [GameManagementStatus.WAITING_SECOND_PLAYER_TO_JOIN, GameManagementStatus.WAITING_FOR_READY_UP_BOTH]
             GameManagementStatus.GAME_ENDED_WITH_ERROR | [GameManagementStatus.WAITING_SECOND_PLAYER_TO_JOIN]
-            GameManagementStatus.GAME_ENDED_WITH_ERROR | [GameManagementStatus.WAITING_SECOND_PLAYER_TO_JOIN, GameManagementStatus.GAME_ENDED_BOTH_SKIPPED_SEQUENTIALLY, GameManagementStatus.GAME_ENDED_LOST_PLAYER_SKIPPED_TOO_MANY_TURNS, GameManagementStatus.WAITING_RED_TURN]
+            GameManagementStatus.GAME_ENDED_WITH_ERROR | [GameManagementStatus.WAITING_SECOND_PLAYER_TO_JOIN, GameManagementStatus.GAME_ENDED_NO_SPOTS_LEFT, GameManagementStatus.WAITING_FOR_READY_UP_RED, GameManagementStatus.WAITING_RED_TURN]
     }
 }

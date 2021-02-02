@@ -43,6 +43,11 @@ public class ReversiGame {
     @Column
     private int yRowCount;
 
+    @Column
+    private Integer totalBlueVictoryPoints;
+    @Column
+    private Integer totalRedVictoryPoints;
+
     public ReversiGame() {
         this.xColumnCount = 0;
         this.yRowCount = 0;
@@ -61,6 +66,9 @@ public class ReversiGame {
         this.dateFinished = null;
 
         this.placeRequestList = new LinkedList<>();
+
+        totalRedVictoryPoints = 0;
+        totalBlueVictoryPoints = 0;
     }
 
     public void setTotalBluePieces(Integer totalBluePieces) {
@@ -159,5 +167,21 @@ public class ReversiGame {
 
     public int getyRowCount() {
         return yRowCount;
+    }
+
+    public Integer getTotalBlueVictoryPoints() {
+        return totalBlueVictoryPoints;
+    }
+
+    public void setTotalBlueVictoryPoints(Integer totalBlueVictoryPoints) {
+        this.totalBlueVictoryPoints = totalBlueVictoryPoints;
+    }
+
+    public Integer getTotalRedVictoryPoints() {
+        return totalRedVictoryPoints;
+    }
+
+    public void setTotalRedVictoryPoints(Integer totalRedVictoryPoints) {
+        this.totalRedVictoryPoints = totalRedVictoryPoints;
     }
 }

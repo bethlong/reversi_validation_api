@@ -2,16 +2,15 @@ package uk.co.bethlong.chess_validation_api.model.game.reversi;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
 import uk.co.bethlong.chess_validation_api.model.database.game.reversi.*;
 import uk.co.bethlong.chess_validation_api.model.game.InvalidPlayerMoveException;
-import uk.co.bethlong.chess_validation_api.model.game.InvalidPlayerMoveRequestException;
+import uk.co.bethlong.chess_validation_api.model.game.reversi.exception.InvalidGameStateException;
 
 import java.util.List;
 import java.util.Optional;
 
+@Service
 public class ReversiGamePlayService {
     private final Logger LOGGER = LoggerFactory.getLogger(ReversiGamePlayService.class);
 
@@ -22,24 +21,22 @@ public class ReversiGamePlayService {
     private final ReversiGameLogicService logicService;
     private final ReversiGameService reversiGameService;
 
-    private final int maxSkipsBeforeLost;
-
     public ReversiGamePlayService(PlaceRequestRepository placeRequestRepository,
                                   ReversiGameRepository reversiGameRepository,
                                   ReversiPlayerService reversiPlayerService,
                                   SpotRepository spotRepository,
                                   ReversiGameLogicService logicService,
-                                  ReversiGameService reversiGameService, @Value("${uk.co.bethlong.api.model.reversi.max-skip-requests-before-auto-loss}") int maxSkipsBeforeLost) {
+                                  ReversiGameService reversiGameService
+    ) {
         this.placeRequestRepository = placeRequestRepository;
         this.reversiGameRepository = reversiGameRepository;
         this.reversiPlayerService = reversiPlayerService;
         this.spotRepository = spotRepository;
         this.logicService = logicService;
         this.reversiGameService = reversiGameService;
-        this.maxSkipsBeforeLost = maxSkipsBeforeLost;
     }
 
-    public void requestSkipTurn(String gameUid, String playerUid) {
+    public void skipTurn(String gameUid, String playerUid) {
         ReversiGame reversiGame = reversiGameService.findGame(gameUid);
 
         reversiGameService.checkGameStatus(reversiGame, GameManagementStatus.WAITING_BLUE_TURN, GameManagementStatus.WAITING_RED_TURN);
@@ -51,56 +48,14 @@ public class ReversiGamePlayService {
         placeRequest.setReversiGame(reversiGame);
         placeRequest.setSkip(true);
 
-        if (reversiGame.isTurn(true) && !player.isRed()) {
-            throw new InvalidPlayerMoveRequestException("Skip turn was requested by BLUE player '" + player.getPlayerName() + "' which should be waiting.");
-        }
-
-        if (reversiGame.isTurn(false) && player.isRed()) {
-            throw new InvalidPlayerMoveRequestException("Skip turn was requested by RED player '" + player.getPlayerName() + "' which should be waiting.");
-        }
+        logicService.checkCorrectPlayerForTurn(reversiGame, player);
 
         placeRequestRepository.save(placeRequest);
 
-        Pageable maxSkipsLimitPageable = PageRequest.of(0, maxSkipsBeforeLost);
-        List<PlaceRequest> lastCurrentPlayerPlaceRequestList = placeRequestRepository.findByReversiGameAndPlayerOrderByRequestedDateDesc(reversiGame, player, maxSkipsLimitPageable);
-
-        boolean isAllPreviousCurrentPlayerTurnsSkips = true;
-        for (PlaceRequest previousPlaceRequest : lastCurrentPlayerPlaceRequestList)
-        {
-            if (!previousPlaceRequest.isSkip())
-                isAllPreviousCurrentPlayerTurnsSkips = false;
-        }
-
-        if (isAllPreviousCurrentPlayerTurnsSkips) {
-            Pageable limitPageable = PageRequest.of(0, 2);
-            List<PlaceRequest> lastTwoTurnsPlaceRequestList = placeRequestRepository.findByReversiGameOrderByRequestedDateDesc(reversiGame, limitPageable);
-
-            boolean isLastTwoTurnsSkips = true;
-            for (PlaceRequest previousPlaceRequest : lastTwoTurnsPlaceRequestList)
-            {
-                if (!previousPlaceRequest.isSkip())
-                    isLastTwoTurnsSkips = false;
-            }
-
-            if (isLastTwoTurnsSkips)
-            {
-                reversiGame.setVictoryStatus(VictoryStatus.DRAW);
-                reversiGame.setGameManagementStatus(GameManagementStatus.GAME_ENDED_BOTH_SKIPPED_SEQUENTIALLY);
-            }
-            else
-            {
-                reversiGame.setVictoryStatus(player.isRed() ? VictoryStatus.BLUE_VICTORY : VictoryStatus.RED_VICTORY);
-                reversiGame.setGameManagementStatus(GameManagementStatus.GAME_ENDED_LOST_PLAYER_SKIPPED_TOO_MANY_TURNS);
-            }
-
-        }
-        else
-        {
-            if (reversiGame.isTurn(true))
-                reversiGame.setGameManagementStatus(GameManagementStatus.WAITING_BLUE_TURN);
-            else if (reversiGame.isTurn(false))
-                reversiGame.setGameManagementStatus(GameManagementStatus.WAITING_RED_TURN);
-        }
+        if (reversiGame.isTurn(true))
+            reversiGame.setGameManagementStatus(GameManagementStatus.WAITING_BLUE_TURN);
+        else if (reversiGame.isTurn(false))
+            reversiGame.setGameManagementStatus(GameManagementStatus.WAITING_RED_TURN);
 
         reversiGameRepository.save(reversiGame);
     }
@@ -119,22 +74,20 @@ public class ReversiGamePlayService {
         placeRequest.setYRow(yRow);
         placeRequest.setReversiGame(reversiGame);
 
-        if (reversiGame.isTurn(true) && !player.isRed()) {
-            throw new InvalidPlayerMoveRequestException("Move was requested by BLUE player '" + player.getPlayerName() + "' which should be waiting.");
-        }
-
-        if (reversiGame.isTurn(false) && player.isRed()) {
-            throw new InvalidPlayerMoveRequestException("Move was requested by RED player '" + player.getPlayerName() + "' which should be waiting.");
-        }
+        logicService.checkCorrectPlayerForTurn(reversiGame, player);
 
         // Build Board Representation: Spot Grid
         List<Spot> spotList = spotRepository.findByReversiGame(reversiGame);
+
+        if (spotList.size() != (reversiGame.getxColumnCount() * reversiGame.getyRowCount()))
+            throw new InvalidGameStateException("Invalid total number of stored spots: expected " + (reversiGame.getxColumnCount() * reversiGame.getyRowCount()) + ", found " + spotList.size());
+
         Spot targetSpot = null;
         Spot[][] spotGrid = new Spot[reversiGame.getxColumnCount()][reversiGame.getyRowCount()];
         for (Spot spot : spotList) {
-            spotGrid[spot.getXColumn()][spot.getYRow()] = spot;
+            spotGrid[spot.getXColumn() - 1][spot.getYRow() - 1] = spot;
 
-            if (spot.getXColumn() == placeRequest.getXColumn() && spot.getYRow() == placeRequest.getYRow()) {
+            if (placeRequest.isForSpot(spot)) {
                 targetSpot = spot;
             }
         }
@@ -161,9 +114,9 @@ public class ReversiGamePlayService {
                 || lesserXLesserYOptional.isPresent() || greaterXLesserYOptional.isPresent()
                 || lesserXGreaterYOptional.isPresent() || greaterXGreaterYOptional.isPresent();
         if (!atLeastOneMatch)
-            throw new InvalidPlayerMoveException("Not a valid move: no matching pieces of same colour");
+            throw new InvalidPlayerMoveException("Not a valid move: no matching pieces of same colour in any direction");
 
-        // Make Move
+        // Place piece
         targetSpot.setHasPiece(true);
         targetSpot.setIsRedPiece(player.isRed());
 
@@ -178,18 +131,7 @@ public class ReversiGamePlayService {
         if (greaterXGreaterYOptional.isPresent()) logicService.flipSpotsInDirection(spotGrid, targetSpot, player.isRed(), 1, 1);
 
         // Total New Scores
-        int blueCount = 0;
-        int redCount = 0;
-        for (Spot spot : spotList) {
-            if (spot.hasPiece()) {
-                if (spot.isRedPiece())
-                    redCount++;
-                else
-                    blueCount++;
-            }
-        }
-        reversiGame.setTotalRedPieces(redCount);
-        reversiGame.setTotalBluePieces(blueCount);
+        logicService.totalScores(reversiGame, spotList);
 
         // Save entities to DB
         spotRepository.saveAll(spotList);
@@ -206,9 +148,7 @@ public class ReversiGamePlayService {
 
         // If game has ended
         if (!hasSpotsLeft) {
-            reversiGame.setVictoryStatus(
-                    logicService.declareWinner(reversiGame)
-            );
+            logicService.declareWinnerFromNoPossibleMoves(reversiGame, spotList);
 
             reversiGame.setGameManagementStatus(GameManagementStatus.GAME_ENDED_NO_SPOTS_LEFT);
         }

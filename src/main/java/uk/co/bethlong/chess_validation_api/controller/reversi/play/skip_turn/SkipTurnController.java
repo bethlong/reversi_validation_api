@@ -21,7 +21,7 @@ public class SkipTurnController {
     {
         SkipTurnApiResponse skipTurnApiResponse = new SkipTurnApiResponse();
 
-        reversiGamePlayService.requestSkipTurn(gameUid, playerUid);
+        reversiGamePlayService.skipTurn(gameUid, playerUid);
 
         skipTurnApiResponse.hasSucceeded = true;
         skipTurnApiResponse.isValidMove = true;
